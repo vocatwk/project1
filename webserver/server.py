@@ -195,20 +195,30 @@ def login():
     return redirect(url_for('classes'))
   
   uni = request.form['UNI']
-  password = request.form['UNI']
+  password = request.form['password']
 
-  session['uni'] = uni
   if('asInstructor' in request.form):
-    session['is_instructor'] = True
-    print 'student'
+    cmd = 'select * from instructor where UNI = %s'
+    cursor = g.conn.execute(cmd, (uni));
+    if cursor.fetchone()['password'] == password:
+      session['uni'] = uni
+      session['is_instructor'] = True
+      return redirect(url_for('classes'))
+    else:
+      #incorrect password
+      return render_template('index.html')
+
   else:
-    session['is_instructor'] = False
-    print 'instructor'
+    cmd = 'select * from students where UNI = %s'
+    cursor = g.conn.execute(cmd, (uni));
+    if cursor.fetchone()['password'] == password:
+      session['uni'] = uni
+      session['is_instructor'] = False
+      return redirect(url_for('classes'))
+    else:
+      #incorrect password
+      return render_template('index.html')
 
-  print uni
-  print password
-
-  return redirect(url_for('classes'))
 
 @app.route('/logout',methods=['GET'])
 def logout():
