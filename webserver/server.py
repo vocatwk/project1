@@ -17,6 +17,7 @@ Read about it online.
 
 import os
 import random
+import json
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, session, url_for
@@ -36,10 +37,10 @@ app = Flask(__name__, template_folder=tmpl_dir)
 # For your convenience, we already set it to the class database
 
 # Use the DB credentials you received by e-mail
-DB_USER = ""
-DB_PASSWORD = ""
+DB_USER = "vtw2108"
+DB_PASSWORD = "ujoxd0ik"
 
-app.secret_key = "my unobvious secret key"
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 
@@ -243,11 +244,28 @@ def classes():
         classes.append([result['course_id'],result['course_name'],result['instructor_uni']])
     cursor.close()
     input= {'classes':classes, 'is_instructor':is_instructor}
+
     return render_template("classes.html", input=input)
 
-@app.route('/classes/<courseID>', methods=['GET'])
-def course(courseID):
-  return
+@app.route('/classes/<instructorUNI>/<courseID>', methods=['GET'])
+def course(instructorUNI, courseID):
+  if 'uni' not in session:
+        return redirect(url_for('index'))
+
+  cmd = 'select * from questions where course_id = %s AND instructor_UNI = %s'
+  cursor = g.conn.execute(cmd,(courseID, instructorUNI))
+
+  questions = []
+  
+  temp = {}
+  for row in cursor:
+    temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'instructor_UNI': row['instructor_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered']}
+    questions.append(temp)
+
+  input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
+  if request.headers.get('purpose') == 'getQuestions':
+    return json.dumps(input)
+  return render_template("class.html", input=input)
 
     
 @app.route('/delete_class', methods =['POST'])
