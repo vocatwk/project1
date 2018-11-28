@@ -18,7 +18,7 @@ Read about it online.
 import os
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, session, url_for
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -36,8 +36,8 @@ app = Flask(__name__, template_folder=tmpl_dir)
 # For your convenience, we already set it to the class database
 
 # Use the DB credentials you received by e-mail
-DB_USER = ""
-DB_PASSWORD = ""
+DB_USER = "vtw2108"
+DB_PASSWORD = "ujoxd0ik"
 
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 
@@ -189,6 +189,35 @@ def login():
     abort(401)
     this_is_never_executed()
 
+@app.route('/classes')
+def classes():
+    if 'uni' not in session:
+        return redirect(url_for('signup'))
+    uni = session['uni']
+    is_instructor = session['is_instructor']
+    is_instructor = False
+    if is_instructor:
+        q ="SELECT course_id, course_name FROM courses_offered where instructor_uni = %s"
+        cursor = g.conn.execute(q,(uni))
+    else:
+        q= "Select courses.course_id,course_name from (Select course_id, instructor_uni from enrolled_students where student_uni = %s) as courses, courses_offered where courses. course_id = courses_offered.course_id and courses. instructor_uni = courses_offered.instructor_uni"
+        cursor = g.conn.execute(q,(uni))
+    classes = []
+    for result in cursor:
+        classes.append([result['course_id'],result['course_name']])
+    cursor.close()
+    input= {'classes':classes, 'is_instructor':is_instructor}
+    return render_template("classes.html", input=input)
+
+'''@app.route('/uneroll')
+def uneroll():
+    #unenroll the student from the class
+    #then go back to the list of classes you are still enrolled in
+    
+@app.route('/delete_class')
+def uneroll():
+    #delete class that the instructor wants to delete
+    #then go back to the list of classes you are still instructing'''
 
 if __name__ == "__main__":
   import click
