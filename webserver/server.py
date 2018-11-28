@@ -36,8 +36,8 @@ app = Flask(__name__, template_folder=tmpl_dir)
 # For your convenience, we already set it to the class database
 
 # Use the DB credentials you received by e-mail
-DB_USER = "vtw2108"
-DB_PASSWORD = "ujoxd0ik"
+DB_USER = ""
+DB_PASSWORD = ""
 
 app.secret_key = "my unobvious secret key"
 
@@ -223,7 +223,8 @@ def login():
 def logout():
   session.clear()
   return redirect(url_for('index'))
-    
+
+
 
 @app.route('/classes', methods=['POST', 'GET'])
 def classes():
