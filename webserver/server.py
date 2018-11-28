@@ -280,8 +280,7 @@ def course(instructorUNI, courseID):
   if request.headers.get('purpose') == 'getQuestions':
     return json.dumps(input)
   return render_template("class.html", input=input)
-
-    
+   
 @app.route('/delete_class', methods =['POST'])
 def delete_class():
     if 'uni' not in session:
