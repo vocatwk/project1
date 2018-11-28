@@ -16,6 +16,7 @@ Read about it online.
 """
 
 import os
+import random
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, session, url_for
@@ -38,6 +39,8 @@ app = Flask(__name__, template_folder=tmpl_dir)
 # Use the DB credentials you received by e-mail
 DB_USER = ""
 DB_PASSWORD = ""
+
+app.secret_key = ""
 
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 
@@ -114,65 +117,67 @@ def index():
   """
 
   # DEBUG: this is debugging code to see what request looks like
-  print request.args
+  if 'uni' in session:
+    return redirect(url_for('classes'))
+
+  return render_template("index.html")
 
 
-  #
-  # example of a database query
-  #
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
+@app.route('/signup', methods=['POST'])
+def signup():
+  if 'uni' in session:
+    return redirect(url_for('classes'))
+  
+  uni = request.form.get('InstructorUNI')
+  name = request.form['name']
+  email = request.form['email']
+  password = request.form['password']
 
-  #
-  # Flask uses Jinja templates, which is an extension to HTML where you can
-  # pass data to a template and dynamically generate HTML based on the data
-  # (you can think of it as simple PHP)
-  # documentation: https://realpython.com/blog/python/primer-on-jinja-templating/
-  #
-  # You can see an example template in templates/index.html
-  #
-  # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be 
-  # accessible as a variable in index.html:
-  #
-  #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
-  #     <div>{{data}}</div>
-  #     
-  #     # creates a <div> tag for each element in data
-  #     # will print: 
-  #     #
-  #     #   <div>grace hopper</div>
-  #     #   <div>alan turing</div>
-  #     #   <div>ada lovelace</div>
-  #     #
-  #     {% for n in data %}
-  #     <div>{{n}}</div>
-  #     {% endfor %}
-  #
-  context = dict(data = names)
+  if uni != None:
+    cmd = 'INSERT INTO instructor(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
+    g.conn.execute(cmd, (uni, name,email, password));
+    print "inserted %s into table instructor" %(name)
+    
+    #create offered course
+    courseName = request.form['courseName']
+    unique  = false
+    cmd = 'select * from courses_offered where course_id = %d'
+    
+    courseId = 0;
+    #make sure courseID is no taken
+    while(unique != false):
+      courseId = random.getrandbits(32)
+      cursor = g.conn.execute(cmd, (courseId));
+      if cursor.fetchone() == None:
+        unique = True
 
+    #insert course
+    cmd = 'INSERT INTO courses_offered(course_id, course_name, instructor_UNI) VALUES (%s, %s, %s)'
+    g.conn.execute(cmd, (courseId, courseName,uni));
+    print "inserted course %s into table courses_offered" %(name)
 
-  #
-  # render_template looks in the templates/ folder for files.
-  # for example, the below file reads template/index.html
-  #
-  return render_template("index.html", **context)
+    session['uni'] = uni
+    session['is_instructor'] = True
 
-#
-# This is an example of a different path.  You can see it at
-# 
-#     localhost:8111/another
-#
-# notice that the functio name is another() rather than index()
-# the functions for each app.route needs to have different names
-#
-@app.route('/another')
-def another():
-  return render_template("anotherfile.html")
+  else:
+    uni = request.form['StudentUNI']
+    cmd = 'INSERT INTO students(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
+    g.conn.execute(cmd, (uni, name,email, password));
+    print "inserted %s into table student" %(name)
 
+    #enroll student in course
+    courseId = request.form['courseID']
+    instructorUNI = request.form['StudentInstructorUNI']
+
+    cmd = 'INSERT INTO enrolled_students(student_UNI, course_id, instructor_UNI) VALUES (%s, %s, %s)'
+    g.conn.execute(cmd, (uni, courseId, instructorUNI));
+
+    print "inserted %s into table enrolled_students" %(name)
+
+    session['uni'] = uni
+    session['is_instructor'] = False
+
+  return redirect(url_for('classes'))
 
 # Example of adding new data to the database
 @app.route('/add', methods=['POST'])
@@ -180,22 +185,43 @@ def add():
   name = request.form['name']
   print name
   cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-  g.conn.execute(text(cmd), name1 = name, name2 = name);
+  cursor = g.conn.execute(text(cmd), name1 = name, name2 = name);
   return redirect('/')
 
 
-@app.route('/login')
+@app.route('/login',methods=['POST'])
 def login():
-    abort(401)
-    this_is_never_executed()
+  if 'uni' in session:
+    return redirect(url_for('classes'))
+  
+  uni = request.form['UNI']
+  password = request.form['UNI']
 
-@app.route('/classes')
+  session['uni'] = uni
+  if('asInstructor' in request.form):
+    session['is_instructor'] = True
+    print 'student'
+  else:
+    session['is_instructor'] = False
+    print 'instructor'
+
+  print uni
+  print password
+
+  return redirect(url_for('classes'))
+
+@app.route('/logout',methods=['GET'])
+def logout():
+  session.pop('username', None)
+  return redirect(url_for('index'))
+    
+
+@app.route('/classes', methods=['POST', 'GET'])
 def classes():
     if 'uni' not in session:
-        return redirect(url_for('signup'))
+        return redirect(url_for('index'))
     uni = session['uni']
     is_instructor = session['is_instructor']
-    is_instructor = False
     if is_instructor:
         q ="SELECT course_id, course_name FROM courses_offered where instructor_uni = %s"
         cursor = g.conn.execute(q,(uni))
