@@ -245,6 +245,11 @@ def classes():
     input= {'classes':classes, 'is_instructor':is_instructor}
     return render_template("classes.html", input=input)
 
+@app.route('/classes/<courseID>', methods=['GET'])
+def course(courseID):
+  return
+
+
 '''@app.route('/uneroll')
 def uneroll():
     #unenroll the student from the class
