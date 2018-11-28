@@ -249,9 +249,23 @@ def classes():
 
 @app.route('/classes/<instructorUNI>/<courseID>', methods=['GET'])
 def course(instructorUNI, courseID):
+
+  #make sure user is logged in and has access to the course
   if 'uni' not in session:
         return redirect(url_for('index'))
+  if session['is_instructor'] == True:
+    #make sure the courseId is the instructor's
+    if session['uni'] != instructorUNI:
+      return redirect(url_for('index'));
 
+  else:
+    #make sure the student is enrolled in the class
+    cmd = 'select * from enrolled_students where course_id = %s AND instructor_UNI = %s AND student_uni = %s'
+    cursor = g.conn.execute(cmd,(courseID, instructorUNI, session['uni']))
+    if cursor.fetchone() == None:
+      return redirect(url_for('index'));
+
+  #get questions from course
   cmd = 'select * from questions where course_id = %s AND instructor_UNI = %s'
   cursor = g.conn.execute(cmd,(courseID, instructorUNI))
 
