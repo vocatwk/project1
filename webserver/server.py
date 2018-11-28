@@ -179,7 +179,7 @@ def another():
 
   return render_template("anotherfile.html")
 
-@app.route('/signup', methods=['POST'])
+@app.route('/signup/', methods=['POST'])
 def signup():
   
   uni = request.form.get('InstructorUNI')
