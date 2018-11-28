@@ -1,15 +1,122 @@
+<!doctype html>
 <html>
-  <style>
-    body{ 
-      font-size: 15pt;
-      font-family: arial;
+  <head>
+    <title> Qic </title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  </head>
+
+  <style> 
+    div.signup {
+      width:45%;
+      margin: auto;
+      border: 3px solid #999;
+      padding: 3% 5% 5% 5%;
+    }
+
+    .signupContainer {
+      display: flex;
+      flex-direction: row;
+      padding: 0% 0% 0% 0%;
+    }
+    
+    html{
+      height: 100%;
+      width: 100%;
+      padding: 0% 0% 0% 0%;
+    }
+
+    body{
+      position: fixed;
+      height: 100%;
+      width: 100%;
+      padding: 0% 0% 0% 0%;
     }
   </style>
 
-
 <body>
-  <h1>Some famous Computer Scientists</h1>
-  <div>{{data}}</div>
+  
+  </br>
+   <h1 style="text-align: center">Welcome to Qic! ... (pronounced k-ĭ​-k)</h1>
+  </br>
+
+  <div class="signupContainer">
+
+    <div class = "signup">
+      <h2> Instructors </h2>
+      <form action="/signup" method="POST">
+        <div class="form-group">
+          <label for="InstructorUNI">UNI</label>
+          <input class="form-control" id="InstructorUNI" name="InstructorUNI" aria-describedby="emailHelp" placeholder="Enter UNIs">
+        </div>
+        <div class="form-group">
+          <label for="InstructorName">Name</label>
+          <input class="form-control" id="InstructorName" name="name" aria-describedby="emailHelp" placeholder="Enter Name">
+        </div>
+        <div class="form-group">
+          <label for="InstructorEmail">Email address</label>
+          <input type="email" class="form-control" id="InstructorEmail" name="email" aria-describedby="emailHelp" placeholder="Enter email">
+          <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+        </div>
+        <div class="form-group">
+          <label for="InstructorPassword">Password</label>
+          <input type="password" class="form-control" id="InstructorPassword" name="password" placeholder="Password">
+        </div>
+        <div class="form-group">
+          <label for="courseName">Course Name</label>
+          <input class="form-control" id="courseName" name="courseName" aria-describedby="emailHelp" placeholder="Enter Course Name">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+    </div>
+
+    </br>
+
+    <div class = "signup flex-initial">
+      <h2> Students </h2>
+      <form action="/signup" method="POST">
+        <div class="form-group">
+          <label for="StudentUNI">UNI</label>
+          <input class="form-control" id="StudentUNI" name="StudentUNI" aria-describedby="emailHelp" placeholder="Enter UNIs">
+        </div>
+        <div class="form-group">
+          <label for="StudentName">Name</label>
+          <input class="form-control" id="StudentName" name="name" aria-describedby="emailHelp" placeholder="Enter Name">
+        </div>
+        <div class="form-group">
+          <label for="StudentEmail">Email address</label>
+          <input type="email" class="form-control" id="StudentEmail" name="email" aria-describedby="emailHelp" placeholder="Enter email">
+          <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+        </div>
+        <div class="form-group">
+          <label for="StudentPassword">Password</label>
+          <input type="password" class="form-control" id="StudentPassword" name="password" placeholder="Password">
+        </div>
+        <div class="form-group">
+          <label for="courseID">Course ID</label>
+          <input class="form-control" id="courseID" name="courseID" aria-describedby="emailHelp" placeholder="Enter course ID">
+        </div>
+        <div class="form-group">
+          <label for="StudentInsturctorUNI">Instructor UNI</label>
+          <input class="form-control" id="StudentInstructorUNI" name="StudentInstructorUNI" aria-describedby="emailHelp" placeholder="Enter the instructor's UNI">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+    </div>
+
+  </div>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+</body>
+
+
+</html>
+
+
+
+
+<!--
+<div></div>
 
   <div>
     {% for n in data %}
@@ -22,8 +129,4 @@
 <form method="POST" action="/add">
 <p>Name of new computer scientist: <input type="text" name="name"> <input type="submit" value="Add"></p>
 </form>
-
-</body>
-
-
-</html>
+-->

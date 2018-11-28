@@ -16,9 +16,10 @@ Read about it online.
 """
 
 import os
+import random
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response
+from flask import Flask, request, render_template, g, redirect, Response, session, url_for
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
@@ -38,6 +39,8 @@ app = Flask(__name__, template_folder=tmpl_dir)
 # Use the DB credentials you received by e-mail
 DB_USER = ""
 DB_PASSWORD = ""
+
+app.secret_key = ""
 
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 
@@ -166,13 +169,68 @@ def index():
 # 
 #     localhost:8111/another
 #
-# notice that the functio name is another() rather than index()
+# notice that the function name is another() rather than index()
 # the functions for each app.route needs to have different names
 #
-@app.route('/another')
+@app.route('/another/')
 def another():
+  if 'uni' in session:
+    print "logged in as %s" % session['uni']
+
   return render_template("anotherfile.html")
 
+@app.route('/signup', methods=['POST'])
+def signup():
+  
+  uni = request.form.get('InstructorUNI')
+  name = request.form['name']
+  email = request.form['email']
+
+  if uni != None:
+    cmd = 'INSERT INTO instructor(UNI, name, email) VALUES (%s, %s, %s)'
+    g.conn.execute(cmd, (uni, name,email));
+    print "inserted %s into table instructor" %(name)
+    
+    #create offered course
+    courseName = request.form['courseName']
+    unique  = false
+    cmd = 'select * from courses_offered where course_id = %d'
+    
+    courseId = 0;
+    #make sure courseID is no taken
+    while(unique != false):
+      courseId = random.getrandbits(32)
+      cursor = g.conn.execute(cmd, (courseId));
+      if cursor.fetchone() == None:
+        unique = True
+
+    #insert course
+    cmd = 'INSERT INTO courses_offered(course_id, course_name, instructor_UNI) VALUES (%s, %s, %s)'
+    g.conn.execute(cmd, (courseId, courseName,uni));
+    print "inserted course %s into table courses_offered" %(name)
+
+    session['uni'] = uni
+    session['is_instructor'] = True
+
+  else:
+    uni = request.form['StudentUNI']
+    cmd = 'INSERT INTO students(UNI, name, email) VALUES (%s, %s, %s)'
+    g.conn.execute(cmd, (uni, name,email));
+    print "inserted %s into table student" %(name)
+
+    #enroll student in course
+    courseId = request.form['courseID']
+    instructorUNI = request.form['StudentInstructorUNI']
+
+    cmd = 'INSERT INTO enrolled_students(student_UNI, course_id, instructor_UNI) VALUES (%s, %s, %s)'
+    g.conn.execute(cmd, (uni, courseId, instructorUNI));
+
+    print "inserted %s into table enrolled_students" %(name)
+
+    session['uni'] = uni
+    session['is_instructor'] = False
+
+  return redirect(url_for('classes'))
 
 # Example of adding new data to the database
 @app.route('/add', methods=['POST'])
@@ -180,7 +238,7 @@ def add():
   name = request.form['name']
   print name
   cmd = 'INSERT INTO test(name) VALUES (:name1), (:name2)';
-  g.conn.execute(text(cmd), name1 = name, name2 = name);
+  cursor = g.conn.execute(text(cmd), name1 = name, name2 = name);
   return redirect('/')
 
 
