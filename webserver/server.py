@@ -117,78 +117,25 @@ def index():
   """
 
   # DEBUG: this is debugging code to see what request looks like
-  print request.args
-
-
-  #
-  # example of a database query
-  #
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
-
-  #
-  # Flask uses Jinja templates, which is an extension to HTML where you can
-  # pass data to a template and dynamically generate HTML based on the data
-  # (you can think of it as simple PHP)
-  # documentation: https://realpython.com/blog/python/primer-on-jinja-templating/
-  #
-  # You can see an example template in templates/index.html
-  #
-  # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be 
-  # accessible as a variable in index.html:
-  #
-  #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
-  #     <div>{{data}}</div>
-  #     
-  #     # creates a <div> tag for each element in data
-  #     # will print: 
-  #     #
-  #     #   <div>grace hopper</div>
-  #     #   <div>alan turing</div>
-  #     #   <div>ada lovelace</div>
-  #     #
-  #     {% for n in data %}
-  #     <div>{{n}}</div>
-  #     {% endfor %}
-  #
-  context = dict(data = names)
-
-
-  #
-  # render_template looks in the templates/ folder for files.
-  # for example, the below file reads template/index.html
-  #
-  return render_template("index.html", **context)
-
-#
-# This is an example of a different path.  You can see it at
-# 
-#     localhost:8111/another
-#
-# notice that the function name is another() rather than index()
-# the functions for each app.route needs to have different names
-#
-@app.route('/another/')
-def another():
   if 'uni' in session:
-    print "logged in as %s" % session['uni']
+    return redirect(url_for('classes'))
 
-  return render_template("anotherfile.html")
+  return render_template("index.html")
 
-@app.route('/signup/', methods=['POST'])
+
+@app.route('/signup', methods=['POST'])
 def signup():
+  if 'uni' in session:
+    return redirect(url_for('classes'))
   
   uni = request.form.get('InstructorUNI')
   name = request.form['name']
   email = request.form['email']
+  password = request.form['password']
 
   if uni != None:
-    cmd = 'INSERT INTO instructor(UNI, name, email) VALUES (%s, %s, %s)'
-    g.conn.execute(cmd, (uni, name,email));
+    cmd = 'INSERT INTO instructor(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
+    g.conn.execute(cmd, (uni, name,email, password));
     print "inserted %s into table instructor" %(name)
     
     #create offered course
@@ -214,8 +161,8 @@ def signup():
 
   else:
     uni = request.form['StudentUNI']
-    cmd = 'INSERT INTO students(UNI, name, email) VALUES (%s, %s, %s)'
-    g.conn.execute(cmd, (uni, name,email));
+    cmd = 'INSERT INTO students(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
+    g.conn.execute(cmd, (uni, name,email, password));
     print "inserted %s into table student" %(name)
 
     #enroll student in course
@@ -242,18 +189,39 @@ def add():
   return redirect('/')
 
 
-@app.route('/login')
+@app.route('/login',methods=['POST'])
 def login():
-    abort(401)
-    this_is_never_executed()
+  if 'uni' in session:
+    return redirect(url_for('classes'))
+  
+  uni = request.form['UNI']
+  password = request.form['UNI']
 
-@app.route('/classes')
+  session['uni'] = uni
+  if('asInstructor' in request.form):
+    session['is_instructor'] = True
+    print 'student'
+  else:
+    session['is_instructor'] = False
+    print 'instructor'
+
+  print uni
+  print password
+
+  return redirect(url_for('classes'))
+
+@app.route('/logout',methods=['GET'])
+def logout():
+  session.pop('username', None)
+  return redirect(url_for('index'))
+    
+
+@app.route('/classes', methods=['POST', 'GET'])
 def classes():
     if 'uni' not in session:
-        return redirect(url_for('signup'))
+        return redirect(url_for('index'))
     uni = session['uni']
     is_instructor = session['is_instructor']
-    is_instructor = False
     if is_instructor:
         q ="SELECT course_id, course_name FROM courses_offered where instructor_uni = %s"
         cursor = g.conn.execute(q,(uni))
