@@ -247,6 +247,35 @@ def login():
     abort(401)
     this_is_never_executed()
 
+@app.route('/classes')
+def classes():
+    if 'uni' not in session:
+        return redirect(url_for('signup'))
+    uni = session['uni']
+    is_instructor = session['is_instructor']
+    is_instructor = False
+    if is_instructor:
+        q ="SELECT course_id, course_name FROM courses_offered where instructor_uni = %s"
+        cursor = g.conn.execute(q,(uni))
+    else:
+        q= "Select courses.course_id,course_name from (Select course_id, instructor_uni from enrolled_students where student_uni = %s) as courses, courses_offered where courses. course_id = courses_offered.course_id and courses. instructor_uni = courses_offered.instructor_uni"
+        cursor = g.conn.execute(q,(uni))
+    classes = []
+    for result in cursor:
+        classes.append([result['course_id'],result['course_name']])
+    cursor.close()
+    input= {'classes':classes, 'is_instructor':is_instructor}
+    return render_template("classes.html", input=input)
+
+'''@app.route('/uneroll')
+def uneroll():
+    #unenroll the student from the class
+    #then go back to the list of classes you are still enrolled in
+    
+@app.route('/delete_class')
+def uneroll():
+    #delete class that the instructor wants to delete
+    #then go back to the list of classes you are still instructing'''
 
 if __name__ == "__main__":
   import click
