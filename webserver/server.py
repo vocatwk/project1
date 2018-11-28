@@ -25,7 +25,6 @@ tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 
 
-
 # XXX: The Database URI should be in the format of: 
 #
 #     postgresql://USER:PASSWORD@<IP_OF_POSTGRE_SQL_SERVER>/<DB_NAME>
@@ -40,7 +39,7 @@ app = Flask(__name__, template_folder=tmpl_dir)
 DB_USER = ""
 DB_PASSWORD = ""
 
-app.secret_key = ""
+app.secret_key = "my unobvious secret key"
 
 DB_SERVER = "w4111.cisxo09blonu.us-east-1.rds.amazonaws.com"
 
@@ -222,9 +221,10 @@ def login():
 
 @app.route('/logout',methods=['GET'])
 def logout():
-  session.pop('username', None)
+  session.clear()
   return redirect(url_for('index'))
-    
+
+
 
 @app.route('/classes', methods=['POST', 'GET'])
 def classes():
@@ -233,27 +233,37 @@ def classes():
     uni = session['uni']
     is_instructor = session['is_instructor']
     if is_instructor:
-        q ="SELECT course_id, course_name FROM courses_offered where instructor_uni = %s"
+        q ="SELECT course_id, course_name, instructor_uni FROM courses_offered where instructor_uni = %s"
         cursor = g.conn.execute(q,(uni))
     else:
-        q= "Select courses.course_id,course_name from (Select course_id, instructor_uni from enrolled_students where student_uni = %s) as courses, courses_offered where courses. course_id = courses_offered.course_id and courses. instructor_uni = courses_offered.instructor_uni"
+        q= "Select courses.course_id,course_name,courses.instructor_uni from (Select course_id, instructor_uni from enrolled_students where student_uni = %s) as courses, courses_offered where courses. course_id = courses_offered.course_id and courses. instructor_uni = courses_offered.instructor_uni"
         cursor = g.conn.execute(q,(uni))
     classes = []
     for result in cursor:
-        classes.append([result['course_id'],result['course_name']])
+        classes.append([result['course_id'],result['course_name'],result['instructor_uni']])
     cursor.close()
     input= {'classes':classes, 'is_instructor':is_instructor}
     return render_template("classes.html", input=input)
 
-'''@app.route('/uneroll')
-def uneroll():
-    #unenroll the student from the class
-    #then go back to the list of classes you are still enrolled in
     
-@app.route('/delete_class')
-def uneroll():
-    #delete class that the instructor wants to delete
-    #then go back to the list of classes you are still instructing'''
+@app.route('/delete_class', methods =['POST'])
+def delete_class():
+    if 'uni' not in session:
+        return redirect(url_for('index'))
+    uni = session['uni']
+    is_instructor = session['is_instructor']
+    todelete = request.form['course'].split('_')
+    if is_instructor:
+        #should delete the specific class they displayed
+        q = "DELETE FROM courses_offered WHERE course_id = %s and instructor_uni = %s"
+        cursor = g.conn.execute(q,(todelete[0],uni))
+        #then go back to the list of classes you are still instructing
+    else:
+    #should unenroll them from the sopecific class they're in
+        q = "DELETE FROM enrolled_students WHERE course_id = %s and instructor_uni = %s and student_uni = %s "
+        cursor = g.conn.execute(q,(todelete[0],todelete[1],uni))
+        #then go back to the list of classes you are enrolled in
+    return redirect(url_for('classes'))
 
 if __name__ == "__main__":
   import click
