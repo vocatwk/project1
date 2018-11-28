@@ -14,21 +14,39 @@
   <body>
   	<!-- We want to be able to dynamically create the page based on the nuber of classes that we are displaying for easch user-->
     <h1 style="text-align: center">Welcome to Qic! ... (pronounced k-ĭ​-k)</h1>
-  	<div><h1> Classes <h1></div>
-    <hr>
+    <hr color=#dce4f2>
+  	<div style="float:left"><h1> Classes <h1></div>
+    <div style="float:right">
+    <!--change this into a form-->
+    <form action="{{ url_for('logout')}}" method=get>
+        <input align="right" type=submit value="Logout" class = "button"></input>
+    </form>
+
+    </br>
+    </div>
+    <div>
+    
     {% if input['is_instructor']==True %}
   	    {% for n in input['classes'] %}
 
-            <ul>{{n[0]}}: {{n[1]}} <a background-color="dce4f2" class="button" href="/delete_class" role="button"> remove class </a>
+            <ul>{{n[0]}}: {{n[1]}}
+                <form action="{{ url_for('delete_class') }}" method=post>
+                    <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
+                    <input align="right" type=submit value="delete class"></input>
+                </form>
                 </button> </ul>
         {% endfor %}
     {% else%}
         {% for n in input['classes'] %}
-            <ul>{{n[0]}}: {{n[1]}} <a background-color="dce4f2" class="button" href="/unenroll" role="button"> unenroll </a>
+            <ul>{{n[0]}}: {{n[1]}}
+                <form action="{{ url_for('delete_class') }}" method=post>
+                    <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
+                        <input align="right" class = button type=submit value="unenroll"></input>
+                        </form>
                 </button> </ul>
         {% endfor %}
     {% endif %}
-            
+       </div>
 <style>
     h1{
         font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
@@ -43,7 +61,6 @@
         border: 1px;
         border-radius:4px;
         font-size: 16px
-        
     }
     ul{
         border: 1px;
