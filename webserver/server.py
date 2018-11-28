@@ -237,7 +237,7 @@ def classes():
         q ="SELECT course_id, course_name, instructor_uni FROM courses_offered where instructor_uni = %s"
         cursor = g.conn.execute(q,(uni))
     else:
-        q= "Select courses.course_id,course_name,courses.instructor_uni from (Select course_id, instructor_uni from enrolled_students where student_uni = %s) as courses, courses_offered where courses. course_id = courses_offered.course_id and courses. instructor_uni = courses_offered.instructor_uni"
+        q= "Select courses.course_id,course_name,courses.instructor_uni from (Select course_id, instructor_uni from enrolled_students where student_uni = %s) as courses, courses_offered where courses.course_id = courses_offered.course_id and courses.instructor_uni = courses_offered.instructor_uni"
         cursor = g.conn.execute(q,(uni))
     classes = []
     for result in cursor:
@@ -298,6 +298,24 @@ def delete_class():
         q = "DELETE FROM enrolled_students WHERE course_id = %s and instructor_uni = %s and student_uni = %s "
         cursor = g.conn.execute(q,(todelete[0],todelete[1],uni))
         #then go back to the list of classes you are enrolled in
+    return redirect(url_for('classes'))
+
+#method for adding a class/enrolling in a class
+@app.route('/add_class', methods =['POST'])
+def add_class():
+    if 'uni' not in session:
+        return redirect(url_for('index'))
+    uni = session['uni']
+    is_instructor = session['is_instructor']
+    #if they are instructors, add to courses_offered
+    if is_instructor:
+        q = 'Insert into courses_offered(course_id, course_name, instructor_uni) values(%s, %s, %s)'
+        cursor = g.conn.execute(q,(request.form['course_id'],request.form['course_name'],uni))
+    else:
+        #if student, add to enrolled_students
+        q = 'Insert into enrolled_students(student_uni,course_id,instructor_uni) values(%s, %s, %s)'
+        cursor = g.conn.execute(q,(uni, request.form['course_id'],request.form['instructor_uni']))
+
     return redirect(url_for('classes'))
 
 if __name__ == "__main__":

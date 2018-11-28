@@ -14,40 +14,69 @@
   <body>
   	<!-- We want to be able to dynamically create the page based on the nuber of classes that we are displaying for easch user-->
     <h1 style="text-align: center">Welcome to Qic! ... (pronounced k-ĭ​-k)</h1>
-    <hr color=#dce4f2>
-  	<div style="float:left"><h1> Classes <h1></div>
-    <div style="float:right">
     <!--change this into a form-->
+    <div style="float:right">
     <form action="{{ url_for('logout')}}" method=get>
         <input align="right" type=submit value="Logout" class = "button"></input>
     </form>
-
-    </br>
     </div>
+    <hr  width="70%">
+  	<div><h1> Classes <h1></div>
+
+    <p>
     <div>
-        
-    
     {% if input['is_instructor']==True %}
   	    {% for n in input['classes'] %}
-
-            <ul>{{n[0]}}: {{n[1]}}
+            <!--change this into a clicable form that leads to the questions page-->
+<a = href={{ url_for('classes', instructor_uni=n[2],course_id = n[0])}}>{{n[0]}}:{{n[1]}}</a>
                 <form action="{{ url_for('delete_class') }}" method=post>
                     <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
-                    <input align="right" type=submit value="delete class"></input>
+                    <input align="right" class= "button" type=submit value="delete class"></input>
                 </form>
-                </button> </ul>
         {% endfor %}
+        <!--allow them to add a class-->
+        <hr  width="70%">
+        <form action="{{ url_for('add_class') }}" method=post>
+            <p> Want to instruct a new course? Fill out the form below: <p>
+            Course ID:
+            <br>
+            <input type="text" style ="border-radius:4px"  name="course_id">
+            <br>
+            Course Name:
+            <br>
+            <input type="text" style ="border-radius:3px" name="course_name">
+            <br>
+            <br>
+            <input type="submit" class= "button" value="Submit">
+        </form>
     {% else%}
         {% for n in input['classes'] %}
-            <ul>{{n[0]}}: {{n[1]}}
+    <a = href={{ url_for('classes', instructor_uni=n[2],course_id = n[0])}}>{{n[0]}}:{{n[1]}}</a>
                 <form action="{{ url_for('delete_class') }}" method=post>
                     <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
-                        <input align="right" class = button type=submit value="unenroll"></input>
+                    <input align="right" class = button type=submit value="unenroll"></input>
                         </form>
-                </button> </ul>
+
         {% endfor %}
+        <!--allow them to enroll in a class-->
+        <hr  width="70%">
+        <form action="{{ url_for('add_class') }}" method=post>
+            <p> Want to enroll in a new course? Fill out the form below: <p>
+            Course ID:
+            <br>
+            <input type="text" style ="border-radius:4px"  name="course_id">
+            <br>
+            Instructor UNI:
+            <br>
+            <input type="text" style ="border-radius:3px" name="instructor_uni">
+            <br>
+            <br>
+            <input type="submit" class= "button" value="Submit">
+        </form>
+        
     {% endif %}
        </div>
+    </p>
 <style>
     h1{
         font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
@@ -58,15 +87,27 @@
         
     }
     .button{
-        background-color:#dce4f2;
+        background-color:#8EC4FD;
         border: 1px;
         border-radius:4px;
         font-size: 16px
+    }
+
+    p{
+        font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
+        font-size: 20px;
     }
     ul{
         border: 1px;
         border-radius:10px;
         margin: 30px;
+        font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
+        font-size: 20px;
+    }
+    a{
+        border: 1px;
+        border-radius:10px;
+        color: #030002;
         font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
         font-size: 20px;
     }
