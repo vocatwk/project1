@@ -283,6 +283,34 @@ def add_class():
 
     return redirect(url_for('classes'))
 
+#for the stats page
+@app.route('/stats', methods =['GET', 'POST'])
+def stats():
+    #should I still check whether or not something is an instructor
+    if 'uni' not in session:
+        return redirect(url_for('index'))
+    uni = session['uni']
+    is_instructor = session['is_instructor']
+    if not is_instructor:
+        return redirect(url_for('classes'))
+
+    if request.form.get('search_query') == None:
+        #if we haven't asked for anything, show all the student records and their stats
+        q = 'select name, uni, questions, answers from students left outer join (Select qs.student_uni,ans.author_uni, qs.count as questions, ans.count as answers from (select student_uni, count(*) from questions group by student_uni) as qs full outer join (select author_uni, count(*) from answers  group by author_uni) as ans on qs.student_uni =ans.author_uni ) as active on uni = student_uni or uni = author_uni;'
+        cursor = g.conn.execute(q)
+    else:
+        #if they ask for a specific student's data using a search string
+        q = "select name, uni,questions, answers from (select name, uni, questions, answers from students left outer join (Select qs.student_uni,ans.author_uni, qs.count as questions, ans.count as answers from (select student_uni, count(*) from questions group by student_uni) as qs full outer join (select author_uni, count(*) from answers  group by author_uni) as ans on qs.student_uni =ans.author_uni ) as active on uni = student_uni or uni = author_uni) as all_entries where all_entries.name like %s or all_entries.uni like %s"#query by the search terms
+        search_term = request.form['search_query']
+        like_pattern = '%{}%'.format(search_term)
+        cursor = g.conn.execute(q,(like_pattern,like_pattern))
+    input = []
+    for result in cursor:
+        input.append(result)
+    cursor.close()
+    return render_template("stats.html", input=input)
+
+                               
 if __name__ == "__main__":
   import click
 
