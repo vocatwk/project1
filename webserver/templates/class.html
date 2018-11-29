@@ -23,6 +23,8 @@
 
   <script>
 
+    var activesDict = new Set();
+
     $(document).ready(function(){
       $('#addQuestionButton').click(function(){
         $("#addQuestionForm").show();
@@ -30,7 +32,7 @@
       });
     });
     //pull in questions every second and populate questions
-    var interval = 1000;
+    var interval = 5000;
     $(window).ready(function(){
       populateQuestions({{input|tojson|safe}});
       setTimeout(getQuestions, interval);
@@ -38,6 +40,17 @@
 
     function getQuestions() {
       var input = {{input|tojson|safe}};
+      activesDict = new Set();
+      var actives = document.getElementsByClassName("Answers");
+      console.log(actives + "questionObject");
+      for(var i = 0; i<actives.length; i++){
+
+        console.log("looping");
+        if (actives[i].style.display !== "none"){
+          console.log(actives[i].getAttribute('id') + "qid???");
+          activesDict.add(actives[i].getAttribute('id'));
+        }
+      }
 
       fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'], {
         method: "GET",
@@ -62,6 +75,7 @@
       })
     }
 
+    //change 
     function pressButton(purpose, url) {
       var input = {{input|tojson|safe}};
 
@@ -76,11 +90,6 @@
           console.log("An error occured. Status code: " + response.status);
           return;
         }
-
-        response.json().then(function(data){
-          populateQuestions(data);
-        });
-
       }, function(error) {
         console.log("An error occured. " + error.message);
       })
@@ -94,9 +103,22 @@
       var questionsList = document.getElementById('questionsList');
       questionsList.innerHTML = '';
       for(var i = 0; i < questions.length; i++){
+
+        var total = document.createElement("div");
+        var answers = document.createElement("div");
+        
+        answers.setAttribute('class', 'Answers');
+        answers.setAttribute("questionAsker",questions[i]['student_UNI']);
+        answers.style.display = "none";
+
+        //add answers and a form(if student) to answers block. using fetch
+
+        answers.setAttribute("id", questions[i]['question_ID'] + "answer");
+
         var question = document.createElement("div");
         question.setAttribute("class", "question");
         question.setAttribute("id", questions[i]['question_ID']);
+        question.setAttribute("asker",questions[i]['student_UNI'])
 
         var upvote = document.createElement("a");
         var bookmark = document.createElement("a");
@@ -109,6 +131,8 @@
         bookmark.setAttribute("class", "btn btn-primary");
         misunderstand.setAttribute("class", "btn btn-primary");
         answer.setAttribute("class", "btn btn-primary");
+        answer.setAttribute("parentQuestionId", questions[i]['question_ID'])
+        answer.setAttribute("asker",questions[i]['student_UNI'])
         markAsAnswered.setAttribute("class", "btn btn-primary");
 
         upvote.textContent = "upvote";
@@ -120,7 +144,8 @@
         
         var callingPressButton = function(){
           var question_ID = this.parentElement.getAttribute("id");
-          var url = "/" + question_ID;
+          var asker = this.parentElement.getAttribute("asker");
+          var url = "/" + asker + "/"+ question_ID;
 
           var purpose = $(this).text();
 
@@ -131,28 +156,90 @@
         upvote.addEventListener("click", callingPressButton);
         bookmark.addEventListener("click", callingPressButton);
         misunderstand.addEventListener("click", callingPressButton);
-        answer.addEventListener("click", callingPressButton);
+        answer.addEventListener("click", function(){
+          console.log("got clicked");
+          var qanswer_ID = $(this).attr("parentQuestionId");
+          var answers_ID = qanswer_ID + "answer";
+          var answersBlock = document.getElementById(answers_ID);
+
+          console.log(answersBlock + "nulllllll?");
+
+          var asker  = $(this).attr("asker");
+
+          var url = "/" + asker + "/" + qanswer_ID;
+
+          console.log('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + url);
+          //populate answers
+          fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + url, {
+            method: "GET",
+            headers: {
+              "purpose" : "getAnswers"
+            },
+            credentials: "same-origin"
+          }).then(function(response) {
+              if(!response.ok) {
+                console.log("An error occured. Status code: " + response.status);
+                return;
+              }
+
+              response.json().then(function(data){
+                var answersFromData = data['answers']
+                var course_id = input['course_id']
+                var is_instructor = "{{session['is_instructor']}}"
+
+                console.log(answersFromData + "weeee");
+
+                for(var i = 0; i < answersFromData.length; i++){
+
+                  var answerToQ = document.createElement('div');
+
+                  answerToQ.setAttribute('class', 'answer');
+                  answerToQ.innerHTML = answersFromData[i]['answer'];
+
+                  console.log(answerToQ);
+
+                  answersBlock.appendChild(answerToQ);
+                } 
+                
+              });
+
+            }, function(error) {
+              console.log("An error occured. " + error.message);
+            });
+
+            answersBlock.style.display = "block";
+          });
+  
+
+        if(activesDict.has(questions[i]['question_ID'] + "answer")){
+          answer.click();
+        }
+
         markAsAnswered.addEventListener("click", callingPressButton);
 
 
         var link = document.createElement("a");
-        link.setAttribute("href", "/questions/" + input['course_id'] + "/" + questions[i]['instructor_UNI'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
+        link.setAttribute("href", "/questions/" + input['course_id'] + "/" + input['instructor_uni'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
         link.textContent = questions[i]['question'] + "[upvotes = " + questions[i]['upvotes'] + "]";
 
         question.appendChild(link)
-        questionsList.appendChild(question);
 
         //add buttons
         if(is_instructor == 'False'){
           question.appendChild(upvote);
           question.appendChild(bookmark);
           question.appendChild(answer);
-          question.appendChild(answer);      
+          question.appendChild(misunderstand);      
         }
 
         else{
           question.appendChild(markAsAnswered);
         }
+
+        total.appendChild(question);
+        total.appendChild(answers)
+
+        questionsList.appendChild(total);
       }
 
     }
