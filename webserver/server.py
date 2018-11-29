@@ -284,7 +284,7 @@ def course(instructorUNI, courseID):
       g.conn.execute(cmd,(questionId, session['uni'], courseID, instructorUNI, question, False, datetime.datetime.utcnow()))
 
 
-  #get questions from course
+  ##return questions to a specific course ordered by upvotes and time
   cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) ) - 1 as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
   cursor = g.conn.execute(cmd,(courseID, instructorUNI))
 
@@ -300,8 +300,8 @@ def course(instructorUNI, courseID):
     return json.dumps(input)
   return render_template("class.html", input=input)
    
-@app.route('/classes/<instructorUNI>/<courseID>/<questionID>', methods=['GET', 'POST'])
-def doQuestion(instructorUNI, courseID, questionID):
+@app.route('/classes/<instructorUNI>/<courseID>/<askerID>/<questionID>', methods=['GET', 'POST'])
+def doQuestion(instructorUNI, courseID, askerID, questionID):
 
   #make sure user is logged in and has access to the course
   if 'uni' not in session:
@@ -318,35 +318,42 @@ def doQuestion(instructorUNI, courseID, questionID):
     if cursor.fetchone() == None:
       return redirect(url_for('index'))
 
-  purpose = request.headers.get('purpose')
-  print purpose
-  if purpose == 'upvote':
-    #insert into that upvotedquestions
-    print 'upvoted!'
-  elif purpose == 'misunderstand':
-    print 'misunderstood!'
-    #insert into misunderstands
-  elif purpose == 'bookmark':
-    #insert into bookmarked
-    print 'bookmarked!'
-  elif purpose == 'answer':
-    #insert into bookmarked
-    print 'I answered!'
-  elif purpose == 'Mark as answered':
-    #mark question as answered in table
-    print 'Answered!'
+  if request.method == 'POST':
+    purpose = request.headers.get('purpose')
+    print purpose
+    if purpose == 'upvote':
+      #insert into that upvotedquestions
+      print 'upvoted!'
+      redirect(url_for('course'))
+    elif purpose == 'misunderstand':
+      print 'misunderstood!'
+      #insert into misunderstands
+      redirect(url_for('course'))
+    elif purpose == 'bookmark':
+      #insert into bookmarked
+      print 'bookmarked!'
+      redirect(url_for('course'))
+    elif purpose == 'answer':
+      answer = request['form']
+      #insert into answers
+      print 'I answered!'
+    elif purpose == 'Mark as answered':
+      #mark question as answered in table
+      print 'Answered!'
+      redirect(url_for('course'))
 
-  cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) ) - 1 as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
-  cursor = g.conn.execute(cmd,(courseID, instructorUNI))
+  #return answers to a specific question ordered by upvotes and time
+  cmd = 'select q.author_uni, q.question_id, q.student_UNI, q.course_id, q.instructor_UNI, q.answer, q.endorsed, q.timestamp, (count(*) OVER (partition by q.author_uni, q.question_id, q.student_UNI, q.course_id, q.instructor_UNI) ) - 1 as upvotes from answers q left join upvoted_answers uq on q.author_uni = uq.author_uni AND q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s AND q.student_uni = %s AND q.question_id = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
+  cursor = g.conn.execute(cmd,(courseID, instructorUNI, askerID, questionID))
 
-  questions = []
+  answers = []
   
   temp = {}
   for row in cursor:
-    temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
-    questions.append(temp)
+    temp = {'answer': row['answer'], 'author_uni': row['author_uni'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'endorsed' : row['endorsed'], 'upvotes': row['upvotes']}
+    answers.append(temp)
 
-  input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
+  input = {'course_id': courseID, 'answers':answers, 'instructor_uni': instructorUNI}
   return json.dumps(input)
 
 
