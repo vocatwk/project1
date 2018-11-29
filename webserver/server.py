@@ -304,8 +304,10 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
 
   #make sure user is logged in and has access to the course
   if 'uni' not in session:
-        return redirect(url_for('index'))
-  uni =session['uni']
+    return redirect(url_for('index'))
+
+  uni = session['uni']
+
   if session['is_instructor'] == True:
     #make sure the courseId is the instructor's
     if session['uni'] != instructorUNI:
@@ -357,8 +359,10 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
     temp = {'answer': row['answer'], 'author_uni': row['author_uni'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'endorsed' : row['endorsed'], 'upvotes': row['upvotes']}
     answers.append(temp)
 
-    input = {'course_id': courseID,'answers':answers, 'instructor_uni': instructorUNI}
+  input = {'course_id': courseID,'answers':answers, 'instructor_uni': instructorUNI, 'question_id': questionID, 'student_uni': askerID}
+  if request.headers.get('purpose') == 'getAnswers':
     return json.dumps(input)
+  return render_template("questions.html", input=input)
 
 """#for the answers page, we just render them.
 @app.route('/questions/<courseID>/<instructorUNI>/<askerID>/<questionID>', methods=['GET', 'POST'])
