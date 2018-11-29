@@ -28,7 +28,7 @@
     {% if input['is_instructor']==True %}
   	    {% for n in input['classes'] %}
             <!--change this into a clicable form that leads to the questions page-->
-            <a = href='classes/{{n[2]}}/{{n[0]}}'>{{n[0]}}:{{n[1]}}</a>
+            <a href="classes/{{n[2]}}/{{n[0]}}">{{n[0]}}:{{n[1]}}</a>
                 <form action="{{ url_for('delete_class') }}" method=post>
                     <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
                     <input align="right" class= "button" type=submit value="delete class"></input>
@@ -38,10 +38,6 @@
         <hr  width="70%">
         <form action="{{ url_for('add_class') }}" method=post>
             <p> Want to instruct a new course? Fill out the form below: <p>
-            Course ID:
-            <br>
-            <input type="text" style ="border-radius:4px"  name="course_id">
-            <br>
             Course Name:
             <br>
             <input type="text" style ="border-radius:3px" name="course_name">
@@ -51,7 +47,8 @@
         </form>
     {% else%}
         {% for n in input['classes'] %}
-    <a = href={{ url_for('classes', instructor_uni=n[2],course_id = n[0])}}>{{n[0]}}:{{n[1]}}</a>
+        <a href="classes/{{n[2]}}/{{n[0]}}">{{n[0]}}:{{n[1]}}</a>
+    <!--a = href={{ url_for('classes', instructor_uni=n[2],course_id = n[0])}}>{{n[0]}}:{{n[1]}}</a>-->
                 <form action="{{ url_for('delete_class') }}" method=post>
                     <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
                     <input align="right" class = button type=submit value="unenroll"></input>
