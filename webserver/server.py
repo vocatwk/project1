@@ -290,7 +290,14 @@ def course(instructorUNI, courseID):
   bookmark = request.form['Bookmark']
   if bookmark is not none:
       # the question has to be in bookmarks, has to have the same uni and has to be enrolled in the class
-      q = 'select distinct q.question_id, q.student_UNI, q.question, q.answered, q.timestamp,upvotes from (select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc) as q, bookmarks where bookmarker_uni = %s and bookmarks.student_uni = q.student_uni and q.question_id = bookmarks.question_id and bookmarks.course_id=1 and bookmarks.instructor_uni = %s'
+    q = 'select distinct q.question_id, q.student_UNI, q.question, q.answered, q.timestamp,upvotes from (select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc) as q, bookmarks where bookmarker_uni = %s and bookmarks.student_uni = q.student_uni and q.question_id = bookmarks.question_id and bookmarks.course_id=1 and bookmarks.instructor_uni = %s'
+    questions = []
+
+    temp = {}
+        for row in cursor:
+        temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
+        questions.append(temp)
+    input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
   
   #filter by bookmarks
   #return the page we currently have with results as bookmarked questions
