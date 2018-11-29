@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title> Qic </title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  </head>
+
+  <style> 
+
+
+  html, body {
+    overflow-y:scroll;
+    height:100%;
+  }
+
+  .question {
+    display; flex
+  }
+  </style>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+  <script>
+
+    $(document).ready(function(){
+      $('#addQuestionButton').click(function(){
+        $("#addQuestionForm").show();
+
+      });
+    });
+    //pull in questions every second and populate questions
+    var interval = 1000;
+    $(window).ready(function(){
+      populateQuestions({{input|tojson|safe}});
+      setTimeout(getQuestions, interval);
+    })
+
+    function getQuestions() {
+      var input = {{input|tojson|safe}};
+
+      fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'], {
+        method: "GET",
+        headers: {
+          "purpose" : "getQuestions"
+        },
+        credentials: "same-origin"
+      }).then(function(response) {
+        if(!response.ok) {
+          console.log("An error occured. Status code: " + response.status);
+          return;
+        }
+
+        response.json().then(function(data){
+          populateQuestions(data);
+        });
+        setTimeout(getQuestions, interval);
+
+      }, function(error) {
+        console.log("An error occured. " + error.message);
+        setTimeout(getQuestions, interval);
+      })
+    }
+
+    function pressButton(purpose, url) {
+      var input = {{input|tojson|safe}};
+
+      fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + url, {
+        method: "POST",
+        headers: {
+          "purpose" : purpose
+        },
+        credentials: "same-origin"
+      }).then(function(response) {
+        if(!response.ok) {
+          console.log("An error occured. Status code: " + response.status);
+          return;
+        }
+
+        response.json().then(function(data){
+          populateQuestions(data);
+        });
+
+      }, function(error) {
+        console.log("An error occured. " + error.message);
+      })
+    }
+
+    function populateQuestions(input){
+      var questions = input['questions']
+      var course_id = input['course_id']
+      var is_instructor = "{{session['is_instructor']}}"
+    
+      var questionsList = document.getElementById('questionsList');
+      questionsList.innerHTML = '';
+      for(var i = 0; i < questions.length; i++){
+        var question = document.createElement("div");
+        question.setAttribute("class", "question");
+        question.setAttribute("id", questions[i]['question_ID']);
+
+        var upvote = document.createElement("a");
+        var bookmark = document.createElement("a");
+        var misunderstand = document.createElement("a");
+        var answer = document.createElement("button");
+        var markAsAnswered = document.createElement("button");
+
+
+        upvote.setAttribute("class", "btn btn-primary");
+        bookmark.setAttribute("class", "btn btn-primary");
+        misunderstand.setAttribute("class", "btn btn-primary");
+        answer.setAttribute("class", "btn btn-primary");
+        markAsAnswered.setAttribute("class", "btn btn-primary");
+
+        upvote.textContent = "upvote";
+        bookmark.textContent = "bookmark";
+        misunderstand.textContent = "misunderstand";
+        answer.textContent = "answer";
+        markAsAnswered.textContent = "Mark as answered";
+
+        
+        var callingPressButton = function(){
+          var question_ID = this.parentElement.getAttribute("id");
+          var url = "/" + question_ID;
+
+          var purpose = $(this).text();
+
+          pressButton(purpose, url);
+
+        }
+
+        upvote.addEventListener("click", callingPressButton);
+        bookmark.addEventListener("click", callingPressButton);
+        misunderstand.addEventListener("click", callingPressButton);
+        answer.addEventListener("click", callingPressButton);
+        markAsAnswered.addEventListener("click", callingPressButton);
+
+
+        var link = document.createElement("a");
+        link.setAttribute("href", "/questions/" + input['course_id'] + "/" + questions[i]['instructor_UNI'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
+        link.textContent = questions[i]['question'] + "[upvotes = " + questions[i]['upvotes'] + "]";
+
+        question.appendChild(link)
+        questionsList.appendChild(question);
+
+        //add buttons
+        if(is_instructor == 'False'){
+          question.appendChild(upvote);
+          question.appendChild(bookmark);
+          question.appendChild(answer);
+          question.appendChild(answer);      
+        }
+
+        else{
+          question.appendChild(markAsAnswered);
+        }
+      }
+
+    }
+
+  </script>
+
+<body>
+
+  <h1 style="text-align: center">Welcome to Qic! ... (pronounced k-ĭ​-k)</h1>
+    <!--change this into a form-->
+    <div style="float:right">
+    <form action="{{ url_for('logout')}}" method=get>
+        <input align="right" type=submit value="Logout" class = "button"></input>
+    </form>
+    </div>
+    <hr  width="70%">
+    <div>
+      <h1> Questions <h1> 
+      {% if session['is_instructor'] == False: %}
+        <button type="button" class="btn btn-link" id="addQuestionButton">Add Question</button> </div>
+      {% endif %}
+
+  <div class="questions" id="questionsList">
+
+      <div class="question">
+        
+      </div>
+
+  </div>
+
+  <hr  width="70%">
+
+    <div id="addQuestionForm" style="display: none;">
+      <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}" method="POST">
+            <div class="flex" id="messageForm">
+                  <div class="form-group" id="messageInput">
+                    <input type="text" class="form-control" name="question" placeholder="Type your question here ... ">
+                  </div>
+                  <button type="submit" class="btn btn-primary">Ask!</button>
+                </div>
+        </form>
+    </div>
+  
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+</body>
+
+
+</html>
