@@ -492,7 +492,7 @@ def student_bookmarks():
     for result in cursor:
         input.append(result)
         cursor.close()
-    return render_template("student_stats.html", input=input)
+    return render_template("student_bookmarks.html", input=input)
 #include at top of the page a link to your classes page
 
                                
