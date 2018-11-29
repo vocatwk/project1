@@ -377,22 +377,36 @@ def delete_class():
     return redirect(url_for('classes'))
 
 #method for adding a class/enrolling in a class
-@app.route('/add_class', methods =['POST'])
+@app.route('/add_class', methods =['GET','POST'])
 def add_class():
     if 'uni' not in session:
         return redirect(url_for('index'))
     uni = session['uni']
     is_instructor = session['is_instructor']
     #if they are instructors, add to courses_offered
-    if is_instructor:
-        q = 'Insert into courses_offered(course_id, course_name, instructor_uni) values(%s, %s, %s)'
-        cursor = g.conn.execute(q,(request.form['course_id'],request.form['course_name'],uni))
-    else:
-        #if student, add to enrolled_students
-        q = 'Insert into enrolled_students(student_uni,course_id,instructor_uni) values(%s, %s, %s)'
-        cursor = g.conn.execute(q,(uni, request.form['course_id'],request.form['instructor_uni']))
+    try:
+        if is_instructor:
+            unique  = False
+            courseId = 0;
+            #make sure courseID is not taken
+            while(unique !=True):
+                courseId = random.getrandbits(32)
+                q = 'select * from courses_offered where course_id = %s AND instructor_UNI = %s'
+                cursor = g.conn.execute(q, (courseId, uni))
+                if cursor.fetchone() == None:
+                    unique = True
+            #insert course
+            q = 'Insert into courses_offered(course_id, course_name, instructor_uni) values(%s, %s, %s)'
+            g.conn.execute(q,(courseId,request.form['course_name'],uni))
+            print(request.form['course_name'])
+        else:
+            #if student, add to enrolled_students
+            q = 'Insert into enrolled_students(student_uni,course_id,instructor_uni) values(%s, %s, %s)'
+            g.conn.execute(q,(uni, request.form['course_id'],request.form['instructor_uni']))
 
-    return redirect(url_for('classes'))
+        return redirect(url_for('classes'))
+    except:
+        return redirect(url_for('classes'))
 
 #for the stats page
 @app.route('/stats', methods =['GET', 'POST'])
