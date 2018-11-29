@@ -126,59 +126,59 @@ def index():
 
 @app.route('/signup', methods=['POST'])
 def signup():
-  if 'uni' in session:
-    return redirect(url_for('classes'))
+    if 'uni' in session:
+        return redirect(url_for('classes'))
   
-  uni = request.form.get('InstructorUNI')
-  name = request.form['name']
-  email = request.form['email']
-  password = request.form['password']
+    uni = request.form.get('InstructorUNI')
+    name = request.form['name']
+    email = request.form['email']
+    password = request.form['password']
 
-  if uni != None:
-    cmd = 'INSERT INTO instructor(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
-    g.conn.execute(cmd, (uni, name,email, password));
-    print "inserted %s into table instructor" %(name)
-    
-    #create offered course
-    courseName = request.form['courseName']
-    unique  = false
-    cmd = 'select * from courses_offered where course_id = %d AND instructor_UNI = %s'
-    
-    courseId = 0;
-    #make sure courseID is no taken
-    while(unique != false):
-      courseId = random.getrandbits(32)
-      cursor = g.conn.execute(cmd, (courseId, uni));
-      if cursor.fetchone() == None:
-        unique = True
+    if uni != None:
+        cmd = 'INSERT INTO instructor(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
+        g.conn.execute(cmd, (uni, name,email, password));
+        print "inserted %s into table instructor" %(name)
+        
+        #create offered course
+        courseName = request.form['courseName']
+        unique  = false
+        cmd = 'select * from courses_offered where course_id = %d AND instructor_UNI = %s'
+        
+        courseId = 0;
+        #make sure courseID is no taken
+        while(unique != false):
+          courseId = random.getrandbits(32)
+          cursor = g.conn.execute(cmd, (courseId, uni));
+          if cursor.fetchone() == None:
+            unique = True
 
-    #insert course
-    cmd = 'INSERT INTO courses_offered(course_id, course_name, instructor_UNI) VALUES (%s, %s, %s)'
-    g.conn.execute(cmd, (courseId, courseName,uni));
-    print "inserted course %s into table courses_offered" %(name)
+        #insert course
+        cmd = 'INSERT INTO courses_offered(course_id, course_name, instructor_UNI) VALUES (%s, %s, %s)'
+        g.conn.execute(cmd, (courseId, courseName,uni));
+        print "inserted course %s into table courses_offered" %(name)
 
-    session['uni'] = uni
-    session['is_instructor'] = True
+        session['uni'] = uni
+        session['is_instructor'] = True
 
-  else:
-    uni = request.form['StudentUNI']
-    cmd = 'INSERT INTO students(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
-    g.conn.execute(cmd, (uni, name,email, password));
-    print "inserted %s into table student" %(name)
+    else:
+        uni = request.form['StudentUNI']
+        cmd = 'INSERT INTO students(UNI, name, email, password) VALUES (%s, %s, %s, %s)'
+        g.conn.execute(cmd, (uni, name,email, password));
+        print "inserted %s into table student" %(name)
 
-    #enroll student in course
-    courseId = request.form['courseID']
-    instructorUNI = request.form['StudentInstructorUNI']
+        #enroll student in course
+        courseId = request.form['courseID']
+        instructorUNI = request.form['StudentInstructorUNI']
 
-    cmd = 'INSERT INTO enrolled_students(student_UNI, course_id, instructor_UNI) VALUES (%s, %s, %s)'
-    g.conn.execute(cmd, (uni, courseId, instructorUNI));
+        cmd = 'INSERT INTO enrolled_students(student_UNI, course_id, instructor_UNI) VALUES (%s, %s, %s)'
+        g.conn.execute(cmd, (uni, courseId, instructorUNI));
 
-    print "inserted %s into table enrolled_students" %(name)
+        print "inserted %s into table enrolled_students" %(name)
 
-    session['uni'] = uni
-    session['is_instructor'] = False
+        session['uni'] = uni
+        session['is_instructor'] = False
 
-  return redirect(url_for('classes'))
+    return redirect(url_for('classes'))
 
 # Example of adding new data to the database
 @app.route('/add', methods=['POST'])
@@ -285,7 +285,20 @@ def course(instructorUNI, courseID):
 
 
   ##return questions to a specific course ordered by upvotes and time
-  cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) ) - 1 as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
+  ##if the request method is get if we get the bookmarks of the upvoted
+  
+  bookmark = request.form['Bookmark']
+  if bookmark is not none:
+      # the question has to be in bookmarks, has to have the same uni and has to be enrolled in the class
+      q = 'select distinct q.question_id, q.student_UNI, q.question, q.answered, q.timestamp,upvotes from (select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc) as q, bookmarks where bookmarker_uni = %s and bookmarks.student_uni = q.student_uni and q.question_id = bookmarks.question_id and bookmarks.course_id=1 and bookmarks.instructor_uni = %s'
+  
+  #filter by bookmarks
+  #return the page we currently have with results as bookmarked questions
+  
+  upvoted = request.form['Upvoted']
+  if upvoted is not none:
+  
+  cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc'
   cursor = g.conn.execute(cmd,(courseID, instructorUNI))
 
   questions = []
@@ -306,6 +319,7 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
   #make sure user is logged in and has access to the course
   if 'uni' not in session:
         return redirect(url_for('index'))
+  uni =session['uni']
   if session['is_instructor'] == True:
     #make sure the courseId is the instructor's
     if session['uni'] != instructorUNI:
@@ -323,24 +337,28 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
     print purpose
     if purpose == 'upvote':
       #insert into that upvotedquestions
+      q = 'insert into upvoted_questions(upvoter_uni,question_id,student_uni,course_id,instructor_uni)values(%s,%s,%s,%s,%s)'
+      g.conn.execute(q,(uni,questionID,askerID,courseID,instructorUNI))
       print 'upvoted!'
-      redirect(url_for('course'))
+      return redirect(url_for('course',instructorUNI = instructorUNI, courseID = courseID))
     elif purpose == 'misunderstand':
       print 'misunderstood!'
       #insert into misunderstands
-      redirect(url_for('course'))
+      q = 'insert into misunderstands(misunderstander_uni,question_id,student_uni,course_id,instructor_uni)values(%s,%s,%s,%s,%s)'
+      g.conn.execute(q,(uni,questionID,askerID,courseID,instructorUNI))
+      return redirect(url_for('course',instructorUNI = instructorUNI, courseID = courseID))
     elif purpose == 'bookmark':
       #insert into bookmarked
+      q = 'insert into bookmarks(bookmarker_uni,question_id,student_uni,course_id,instructor_uni)values(%s,%s,%s,%s,%s)'
+      g.conn.execute(q,(uni,questionID,askerID,courseID,instructorUNI))
       print 'bookmarked!'
-      redirect(url_for('course'))
-    elif purpose == 'answer':
-      answer = request['form']
-      #insert into answers
-      print 'I answered!'
+      return redirect(url_for('course',instructorUNI = instructorUNI, courseID = courseID))
     elif purpose == 'Mark as answered':
       #mark question as answered in table
+      q ='update questions set answered=true where question_id = %s';
+      g.conn.execute(q,(questionID))
       print 'Answered!'
-      redirect(url_for('course'))
+      return redirect(url_for('course',instructorUNI = instructorUNI, courseID = courseID))
 
   #return answers to a specific question ordered by upvotes and time
   cmd = 'select q.author_uni, q.question_id, q.student_UNI, q.course_id, q.instructor_UNI, q.answer, q.endorsed, q.timestamp, (count(*) OVER (partition by q.author_uni, q.question_id, q.student_UNI, q.course_id, q.instructor_UNI) ) - 1 as upvotes from answers q left join upvoted_answers uq on q.author_uni = uq.author_uni AND q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s AND q.student_uni = %s AND q.question_id = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
@@ -353,10 +371,44 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
     temp = {'answer': row['answer'], 'author_uni': row['author_uni'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'endorsed' : row['endorsed'], 'upvotes': row['upvotes']}
     answers.append(temp)
 
-  input = {'course_id': courseID, 'answers':answers, 'instructor_uni': instructorUNI}
-  return json.dumps(input)
+    input = {'course_id': courseID,'answers':answers, 'instructor_uni': instructorUNI}
+    return json.dumps(input)
+
+"""#for the answers page, we just render them.
+@app.route('/questions/<courseID>/<instructorUNI>/<askerID>/<questionID>', methods=['GET', 'POST'])
+def doAnswer(instructorUNI, courseID, askerID, questionID):
+    #make sure user is logged in and has access to the course
+    if 'uni' not in session:
+        return redirect(url_for('index'))
+    if session['is_instructor'] == True:
+        #make sure the courseId is the instructor's
+        if session['uni'] != instructorUNI:
+            return redirect(url_for('index'))
+
+    else:
+    #make sure the student is enrolled in the class
+    cmd = 'select * from enrolled_students where course_id = %s AND instructor_UNI = %s AND student_uni = %s'
+        cursor = g.conn.execute(cmd,(courseID, instructorUNI, session['uni']))
+        if cursor.fetchone() == None:
+            return redirect(url_for('index'))
+    if request.method == 'POST':
+        purpose = request.headers.get('purpose')
+        print purpose
+        if purpose == 'upvote':
+            #insert into that upvotedanswers
+            print 'upvoted!'
+                redirect(url_for('course'))
+        elif purpose == 'endorse':
+            #mark answer as endordsed in table
+            
+            print 'Endorsed!'
+            redirect(url_for('course'))
 
 
+    
+    
+    return render_template("questions.html", input=input)
+"""
 @app.route('/delete_class', methods =['POST'])
 def delete_class():
     if 'uni' not in session:

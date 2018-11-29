@@ -127,18 +127,17 @@
         var markAsAnswered = document.createElement("button");
 
 
-        upvote.setAttribute("class", "btn btn-primary");
-        bookmark.setAttribute("class", "btn btn-primary");
-        misunderstand.setAttribute("class", "btn btn-primary");
-        answer.setAttribute("class", "btn btn-primary");
+        upvote.setAttribute("class", "btn btn-primary btn-primary-spacing");
+        bookmark.setAttribute("class", "btn btn-primary btn-primary-spacing");
+        misunderstand.setAttribute("class", "btn btn-primary btn-primary-spacing");
+        answer.setAttribute("class", "btn btn-primary btn-primary-spacing");
         answer.setAttribute("parentQuestionId", questions[i]['question_ID'])
         answer.setAttribute("asker",questions[i]['student_UNI'])
-        markAsAnswered.setAttribute("class", "btn btn-primary");
+        markAsAnswered.setAttribute("class", "btn btn-primary btn-primary-spacing");
 
         upvote.textContent = "upvote";
         bookmark.textContent = "bookmark";
         misunderstand.textContent = "misunderstand";
-        answer.textContent = "answer";
         markAsAnswered.textContent = "Mark as answered";
 
         
@@ -156,67 +155,9 @@
         upvote.addEventListener("click", callingPressButton);
         bookmark.addEventListener("click", callingPressButton);
         misunderstand.addEventListener("click", callingPressButton);
-        answer.addEventListener("click", function(){
-          console.log("got clicked");
-          var qanswer_ID = $(this).attr("parentQuestionId");
-          var answers_ID = qanswer_ID + "answer";
-          var answersBlock = document.getElementById(answers_ID);
-
-          console.log(answersBlock + "nulllllll?");
-
-          var asker  = $(this).attr("asker");
-
-          var url = "/" + asker + "/" + qanswer_ID;
-
-          console.log('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + url);
-          //populate answers
-          fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + url, {
-            method: "GET",
-            headers: {
-              "purpose" : "getAnswers"
-            },
-            credentials: "same-origin"
-          }).then(function(response) {
-              if(!response.ok) {
-                console.log("An error occured. Status code: " + response.status);
-                return;
-              }
-
-              response.json().then(function(data){
-                var answersFromData = data['answers']
-                var course_id = input['course_id']
-                var is_instructor = "{{session['is_instructor']}}"
-
-                console.log(answersFromData + "weeee");
-
-                for(var i = 0; i < answersFromData.length; i++){
-
-                  var answerToQ = document.createElement('div');
-
-                  answerToQ.setAttribute('class', 'answer');
-                  answerToQ.innerHTML = answersFromData[i]['answer'];
-
-                  console.log(answerToQ);
-
-                  answersBlock.appendChild(answerToQ);
-                } 
-                
-              });
-
-            }, function(error) {
-              console.log("An error occured. " + error.message);
-            });
-
-            answersBlock.style.display = "block";
-          });
-  
-
-        if(activesDict.has(questions[i]['question_ID'] + "answer")){
-          answer.click();
-        }
-
         markAsAnswered.addEventListener("click", callingPressButton);
 
+        //add answers page
 
         var link = document.createElement("a");
         link.setAttribute("href", "/questions/" + input['course_id'] + "/" + input['instructor_uni'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
@@ -224,11 +165,10 @@
 
         question.appendChild(link)
 
-        //add buttons
+        //add buttons functionalities
         if(is_instructor == 'False'){
           question.appendChild(upvote);
           question.appendChild(bookmark);
-          question.appendChild(answer);
           question.appendChild(misunderstand);      
         }
 
@@ -257,9 +197,15 @@
     </div>
     <hr  width="70%">
     <div>
-      <h1> Questions <h1> 
+      <h1> <u>Questions</u><h1>
+          <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}" method=get>
+            <input align="right" type=submit value="Bookmark" class = "button"></input>
+            <input align="right" type=submit value="Upvoted" class = "button"></input>
+          </form>
+
+          <br>
       {% if session['is_instructor'] == False: %}
-        <button type="button" class="btn btn-link" id="addQuestionButton">Add Question</button> </div>
+        <button type="button" class="button" id="addQuestionButton">Add Question</button> </div>
       {% endif %}
 
   <div class="questions" id="questionsList">
@@ -278,11 +224,31 @@
                   <div class="form-group" id="messageInput">
                     <input type="text" class="form-control" name="question" placeholder="Type your question here ... ">
                   </div>
-                  <button type="submit" class="btn btn-primary">Ask!</button>
+                  <<input type="submit" class= "button" value="Submit">
                 </div>
         </form>
     </div>
   
+<style>
+    .button, .btn{
+        background-color:#8EC4FD;
+        border: 1px;
+        border-radius:4px;
+        font-size: 16px
+    }
+.btn-primary-spacing{
+    margin-right: 10px;
+    margin-bottom: 10px !important;
+}
+select{
+    width:20%;
+    
+}
+body{
+    font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
+    font-size: 20px;
+}
+    </style>
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
