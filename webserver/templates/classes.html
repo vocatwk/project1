@@ -23,13 +23,13 @@
     </div>
     <hr  width="70%">
   	<div><h1><u>Classes</u><h1></div>
-    <a href = {{url_for('stats')}}> stats </a>
     <p>
     <div>
     {% if input['is_instructor']==True %}
+    <a href = {{url_for('stats')}}> Get student participation stats </a>
+    <br>
   	    {% for n in input['classes'] %}
             <!--change this into a clicable form that leads to the questions page-->
-            <a href='/classes/{{n[2]}}/{{n[0]}}'>{{n[0]}}:{{n[1]}}</a>
             <a href="classes/{{n[2]}}/{{n[0]}}">{{n[0]}}:{{n[1]}}</a>
                 <form action="{{ url_for('delete_class') }}" method=post>
                     <input type=hidden value="{{n[0]}}_{{n[2]}}" name="course"></input>
