@@ -284,27 +284,6 @@ def course(instructorUNI, courseID):
       g.conn.execute(cmd,(questionId, session['uni'], courseID, instructorUNI, question, False, datetime.datetime.utcnow()))
 
 
-  ##return questions to a specific course ordered by upvotes and time
-  ##if the request method is get if we get the bookmarks of the upvoted
-  
-  bookmark = request.form.get('Bookmark')
-  if bookmark is not None:
-      # the question has to be in bookmarks, has to have the same uni and has to be enrolled in the class
-    q = 'select distinct q.question_id, q.student_UNI, q.question, q.answered, q.timestamp,upvotes from (select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc) as q, bookmarks where bookmarker_uni = %s and bookmarks.student_uni = q.student_uni and q.question_id = bookmarks.question_id and bookmarks.course_id=1 and bookmarks.instructor_uni = %s'
-    questions = []
-
-    temp = {}
-    for row in cursor:
-      temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
-      questions.append(temp)
-    input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
-  
-  #filter by bookmarks
-  #return the page we currently have with results as bookmarked questions
-  
-  upvoted = request.form.get('Upvoted')
-  #if upvoted is not none:
-  
   cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc'
   cursor = g.conn.execute(cmd,(courseID, instructorUNI))
 
@@ -474,7 +453,6 @@ def add_class():
 #for the stats page
 @app.route('/stats', methods =['GET', 'POST'])
 def stats():
-    #should I still check whether or not something is an instructor
     if 'uni' not in session:
         return redirect(url_for('index'))
     uni = session['uni']
@@ -497,6 +475,25 @@ def stats():
         input.append(result)
     cursor.close()
     return render_template("stats.html", input=input)
+
+#for the bookmarks page
+@app.route('/student_bookmarks', methods =['GET', 'POST'])
+def student_bookmarks():
+    if 'uni' not in session:
+        return redirect(url_for('index'))
+    uni = session['uni']
+    is_instructor = session['is_instructor']
+    if is_instructor:
+        return redirect(url_for('classes'))
+
+    q = 'select distinct questions.course_id,questions.question_id, question, timestamp from questions, bookmarks where bookmarker_uni = %s and questions.question_id = bookmarks.question_id'
+    cursor = g.conn.execute(q,(uni))
+    input = []
+    for result in cursor:
+        input.append(result)
+        cursor.close()
+    return render_template("student_stats.html", input=input)
+#include at top of the page a link to your classes page
 
                                
 if __name__ == "__main__":
