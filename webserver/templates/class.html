@@ -198,12 +198,7 @@
     <hr  width="70%">
     <div>
       <h1> <u>Questions</u><h1>
-          <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}" method=get>
-            <input align="right" type=submit value="Bookmark" class = "button"></input>
-            <input align="right" type=submit value="Upvoted" class = "button"></input>
-          </form>
 
-          <br>
       {% if session['is_instructor'] == False: %}
         <button type="button" class="button" id="addQuestionButton">Add Question</button> </div>
       {% endif %}

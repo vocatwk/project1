@@ -48,6 +48,8 @@
             <input type="submit" class= "button" value="Submit">
         </form>
     {% else%}
+    <a href = {{url_for('student_bookmarks')}}> Get your upvoted and bookmarked questions </a>
+    <br>
         {% for n in input['classes'] %}
         <a href="classes/{{n[2]}}/{{n[0]}}">{{n[0]}}:{{n[1]}}</a>
     <!--a = href={{ url_for('classes', instructor_uni=n[2],course_id = n[0])}}>{{n[0]}}:{{n[1]}}</a>-->
