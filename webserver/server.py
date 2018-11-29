@@ -18,6 +18,7 @@ Read about it online.
 import os
 import random
 import json
+import datetime
 from sqlalchemy import *
 from sqlalchemy.pool import NullPool
 from flask import Flask, request, render_template, g, redirect, Response, session, url_for
@@ -141,13 +142,13 @@ def signup():
     #create offered course
     courseName = request.form['courseName']
     unique  = false
-    cmd = 'select * from courses_offered where course_id = %d'
+    cmd = 'select * from courses_offered where course_id = %d AND instructor_UNI = %s'
     
     courseId = 0;
     #make sure courseID is no taken
     while(unique != false):
       courseId = random.getrandbits(32)
-      cursor = g.conn.execute(cmd, (courseId));
+      cursor = g.conn.execute(cmd, (courseId, uni));
       if cursor.fetchone() == None:
         unique = True
 
@@ -245,9 +246,9 @@ def classes():
     cursor.close()
     input= {'classes':classes, 'is_instructor':is_instructor}
 
-    return render_template("classes.html", input=input)
+    return render_template ("classes.html", input=input)
 
-@app.route('/classes/<instructorUNI>/<courseID>', methods=['GET'])
+@app.route('/classes/<instructorUNI>/<courseID>', methods=['GET', 'POST'])
 def course(instructorUNI, courseID):
 
   #make sure user is logged in and has access to the course
@@ -265,15 +266,33 @@ def course(instructorUNI, courseID):
     if cursor.fetchone() == None:
       return redirect(url_for('index'));
 
+    if request.method == 'POST':
+      question = request.form['question']
+      #generate questionID
+      questionId = 0;
+      unique = False;
+      cmd  = "select * from questions where question_id = %s AND student_UNI = %s AND course_id = %s AND instructor_UNI = %s"
+
+      #make sure questionID is not taken
+      while(unique != True):
+        questionId = random.getrandbits(16)
+        cursor = g.conn.execute(cmd, (questionId, session['uni'], courseID, instructorUNI));
+        if cursor.fetchone() == None:
+          unique = True
+
+      cmd = 'Insert into questions(question_id, student_UNI, course_id, instructor_UNI, question, answered, timestamp) values(%s, %s, %s, %s, %s, %s, %s)'
+      g.conn.execute(cmd,(questionId, session['uni'], courseID, instructorUNI, question, False, datetime.datetime.utcnow()))
+
+
   #get questions from course
-  cmd = 'select * from questions where course_id = %s AND instructor_UNI = %s'
+  cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) ) - 1 as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
   cursor = g.conn.execute(cmd,(courseID, instructorUNI))
 
   questions = []
   
   temp = {}
   for row in cursor:
-    temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'instructor_UNI': row['instructor_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered']}
+    temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
     questions.append(temp)
 
   input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
@@ -281,6 +300,56 @@ def course(instructorUNI, courseID):
     return json.dumps(input)
   return render_template("class.html", input=input)
    
+@app.route('/classes/<instructorUNI>/<courseID>/<questionID>', methods=['GET', 'POST'])
+def doQuestion(instructorUNI, courseID, questionID):
+
+  #make sure user is logged in and has access to the course
+  if 'uni' not in session:
+        return redirect(url_for('index'))
+  if session['is_instructor'] == True:
+    #make sure the courseId is the instructor's
+    if session['uni'] != instructorUNI:
+      return redirect(url_for('index'))
+
+  else:
+    #make sure the student is enrolled in the class
+    cmd = 'select * from enrolled_students where course_id = %s AND instructor_UNI = %s AND student_uni = %s'
+    cursor = g.conn.execute(cmd,(courseID, instructorUNI, session['uni']))
+    if cursor.fetchone() == None:
+      return redirect(url_for('index'))
+
+  purpose = request.headers.get('purpose')
+  print purpose
+  if purpose == 'upvote':
+    #insert into that upvotedquestions
+    print 'upvoted!'
+  elif purpose == 'misunderstand':
+    print 'misunderstood!'
+    #insert into misunderstands
+  elif purpose == 'bookmark':
+    #insert into bookmarked
+    print 'bookmarked!'
+  elif purpose == 'answer':
+    #insert into bookmarked
+    print 'I answered!'
+  elif purpose == 'Mark as answered':
+    #mark question as answered in table
+    print 'Answered!'
+
+  cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) ) - 1 as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp), extract(month from q.timestamp), extract(day from q.timestamp), upvotes'
+  cursor = g.conn.execute(cmd,(courseID, instructorUNI))
+
+  questions = []
+  
+  temp = {}
+  for row in cursor:
+    temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
+    questions.append(temp)
+
+  input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
+  return json.dumps(input)
+
+
 @app.route('/delete_class', methods =['POST'])
 def delete_class():
     if 'uni' not in session:
