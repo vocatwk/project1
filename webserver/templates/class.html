@@ -32,7 +32,7 @@
       });
     });
     //pull in questions every second and populate questions
-    var interval = 5000;
+    var interval = 1000;
     $(window).ready(function(){
       populateQuestions({{input|tojson|safe}});
       setTimeout(getQuestions, interval);
@@ -40,18 +40,7 @@
 
     function getQuestions() {
       var input = {{input|tojson|safe}};
-      activesDict = new Set();
-      var actives = document.getElementsByClassName("Answers");
-      console.log(actives + "questionObject");
-      for(var i = 0; i<actives.length; i++){
-
-        console.log("looping");
-        if (actives[i].style.display !== "none"){
-          console.log(actives[i].getAttribute('id') + "qid???");
-          activesDict.add(actives[i].getAttribute('id'));
-        }
-      }
-
+    
       fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'], {
         method: "GET",
         headers: {
@@ -160,7 +149,7 @@
         //add answers page
 
         var link = document.createElement("a");
-        link.setAttribute("href", "/questions/" + input['course_id'] + "/" + input['instructor_uni'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
+        link.setAttribute("href", "/classes/" + input['course_id'] + "/" + input['instructor_uni'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
         link.textContent = questions[i]['question'] + "[upvotes = " + questions[i]['upvotes'] + "]";
 
         question.appendChild(link)
@@ -199,8 +188,8 @@
     <div>
       <h1> <u>Questions</u><h1>
           <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}" method=get>
-            <input align="right" type=submit value="Bookmark" class = "button"></input>
-            <input align="right" type=submit value="Upvoted" class = "button"></input>
+            <input align="right" type=submit value="Bookmark" name="Bookmark" class = "button"></input>
+            <input align="right" type=submit value="Upvoted" name="Upvoted" class = "button"></input>
           </form>
 
           <br>
@@ -224,7 +213,7 @@
                   <div class="form-group" id="messageInput">
                     <input type="text" class="form-control" name="question" placeholder="Type your question here ... ">
                   </div>
-                  <<input type="submit" class= "button" value="Submit">
+                  <input type="submit" class= "button" value="Submit">
                 </div>
         </form>
     </div>

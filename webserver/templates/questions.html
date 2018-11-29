@@ -1,247 +1,222 @@
-<!--we wanna be able to ask questions, and see them show up, they should also display the question to whom
- maybe receive from the question a dictionary, then go ahead-->
 <!doctype html>
 <html>
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-            <title> QiC</title>
-            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-                </head>
-    
-    <style>
-        
-        
-        html, body {
-            overflow-y:scroll;
-            height:100%;
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title> Qic </title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  </head>
+
+  <style> 
+
+
+  html, body {
+    overflow-y:scroll;
+    height:100%;
+  }
+
+  .question {
+    display; flex
+  }
+  </style>
+
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+  <script>
+
+    var activesDict = new Set();
+
+    $(document).ready(function(){
+      $('#addAnswerButton').click(function(){
+        $("#addAnswerForm").show();
+
+      });
+    });
+    //pull in questions every second and populate questions
+    var interval = 1000;
+    $(window).ready(function(){
+      populateAnswers({{input|tojson|safe}});
+      setTimeout(getAnswers, interval);
+    })
+
+    function getAnswers() {
+      var input = {{input|tojson|safe}};
+
+      fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + '/' + input['student_UNI'] + "/" + input['question_id'], {
+        method: "GET",
+        headers: {
+          "purpose" : "getAnswers"
+        },
+        credentials: "same-origin"
+      }).then(function(response) {
+        if(!response.ok) {
+          console.log("An error occured. Status code: " + response.status);
+          return;
         }
-    
-    .question {
-        display; flex
+
+        response.json().then(function(data){
+          populateAnswers(data);
+        });
+        setTimeout(getAnswers, interval);
+
+      }, function(error) {
+        console.log("An error occured. " + error.message);
+        setTimeout(getAnswers, interval);
+      })
     }
-    </style>
-    
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    
-    <script>
-        
-        var activesDict = new Set();
-        
-        $(document).ready(function(){
-                          $('#addAnswerButton').click(function(){
-                                                        $("#addAnswerForm").show();
-                                                        
-                                                        });
-                          });
-                          //pull in questions every second and populate questions
-                          var interval = 5000;
-                          $(window).ready(function(){
-                                          populateQuestions({{input|tojson|safe}});
-                                          setTimeout(getQuestions, interval);
-                                          })
-                                          
-                                          function getQuestions() {
-                                              var input = {{input|tojson|safe}};
-                                              activesDict = new Set();
-                                              var actives = document.getElementsByClassName("Answers");
-                                              console.log(actives + "questionObject");
-                                              for(var i = 0; i<actives.length; i++){
-                                                  
-                                                  console.log("looping");
-                                                  if (actives[i].style.display !== "none"){
-                                                      console.log(actives[i].getAttribute('id') + "qid???");
-                                                      activesDict.add(actives[i].getAttribute('id'));
-                                                  }
-                                              }
-                                              
-                                              fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'], {
-                                                    method: "GET",
-                                                    headers: {
-                                                    "purpose" : "getQuestions"
-                                                    },
-                                                    credentials: "same-origin"
-                                                    }).then(function(response) {
-                                                            if(!response.ok) {
-                                                            console.log("An error occured. Status code: " + response.status);
-                                                            return;
-                                                            }
-                                                            
-                                                            response.json().then(function(data){
-                                                                                 populateQuestions(data);
-                                                                                 });
-                                                            setTimeout(getQuestions, interval);
-                                                            
-                                                            }, function(error) {
-                                                            console.log("An error occured. " + error.message);
-                                                            setTimeout(getQuestions, interval);
-                                                            })
-                                          }
-    
-    //change
+
+    //change 
     function pressButton(purpose, url) {
-        var input = {{input|tojson|safe}};
-        
-        fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + url, {
-              method: "POST",
-              headers: {
-              "purpose" : purpose
-              },
-              credentials: "same-origin"
-              }).then(function(response) {
-                      if(!response.ok) {
-                      console.log("An error occured. Status code: " + response.status);
-                      return;
-                      }
-                      }, function(error) {
-                      console.log("An error occured. " + error.message);
-                      })
-    }
-    
-    function populateQuestions(input){
-        var questions = input['questions']
-        var course_id = input['course_id']
-        var is_instructor = "{{session['is_instructor']}}"
-        
-        var questionsList = document.getElementById('questionsList');
-        questionsList.innerHTML = '';
-        for(var i = 0; i < questions.length; i++){
-            
-            var total = document.createElement("div");
-            var answers = document.createElement("div");
-            
-            answers.setAttribute('class', 'Answers');
-            answers.setAttribute("questionAsker",questions[i]['student_UNI']);
-            answers.style.display = "none";
-            
-            //add answers and a form(if student) to answers block. using fetch
-            
-            answers.setAttribute("id", questions[i]['question_ID'] + "answer");
-            
-            var question = document.createElement("div");
-            question.setAttribute("class", "question");
-            question.setAttribute("id", questions[i]['question_ID']);
-            question.setAttribute("asker",questions[i]['student_UNI'])
-            
-            var upvote = document.createElement("a");
-            var bookmark = document.createElement("a");
-            var misunderstand = document.createElement("a");
-            var answer = document.createElement("button");
-            var markAsAnswered = document.createElement("button");
-            
-            
-            upvote.setAttribute("class", "btn btn-primary");
-            bookmark.setAttribute("class", "btn btn-primary");
-            misunderstand.setAttribute("class", "btn btn-primary");
-            answer.setAttribute("class", "btn btn-primary");
-            answer.setAttribute("parentQuestionId", questions[i]['question_ID'])
-            answer.setAttribute("asker",questions[i]['student_UNI'])
-            markAsAnswered.setAttribute("class", "btn btn-primary");
-            
-            upvote.textContent = "upvote";
-            bookmark.textContent = "bookmark";
-            misunderstand.textContent = "misunderstand";
-            markAsAnswered.textContent = "Mark as answered";
-            
-            
-            var callingPressButton = function(){
-                var question_ID = this.parentElement.getAttribute("id");
-                var asker = this.parentElement.getAttribute("asker");
-                var url = "/" + asker + "/"+ question_ID;
-                
-                var purpose = $(this).text();
-                
-                pressButton(purpose, url);
-                
-            }
-            
-            upvote.addEventListener("click", callingPressButton);
-            bookmark.addEventListener("click", callingPressButton);
-            misunderstand.addEventListener("click", callingPressButton);
-            markAsAnswered.addEventListener("click", callingPressButton);
-            
-            //add answers page
-            
-            var link = document.createElement("a");
-            link.setAttribute("href", "/questions/" + input['course_id'] + "/" + input['instructor_uni'] + "/" + questions[i]['student_UNI'] + "/" + questions[i]['question_ID']);
-            link.textContent = questions[i]['question'] + "[upvotes = " + questions[i]['upvotes'] + "]";
-            
-            question.appendChild(link)
-            
-            //add buttons functionalities
-            if(is_instructor == 'False'){
-                question.appendChild(upvote);
-                question.appendChild(bookmark);
-                question.appendChild(misunderstand);
-            }
-            
-            else{
-                question.appendChild(markAsAnswered);
-            }
-            
-            total.appendChild(question);
-            total.appendChild(answers)
-            
-            questionsList.appendChild(total);
+      var input = {{input|tojson|safe}};
+
+      fetch('/classes/' + input['instructor_uni'] + '/' + input['course_id'] + '/' + input['student_UNI'] + '/'+ input['question_id'] + url, {
+        method: "POST",
+        headers: {
+          "purpose" : purpose
+        },
+        credentials: "same-origin"
+      }).then(function(response) {
+        if(!response.ok) {
+          console.log("An error occured. Status code: " + response.status);
+          return;
         }
+      }, function(error) {
+        console.log("An error occured. " + error.message);
+      })
+    }
+
+    function populateAnswers(input){
+      var answers = input['answers']
+      var course_id = input['course_id']
+      var question_id = input['question_id']
+      var is_instructor = "{{session['is_instructor']}}"
+    
+      var answersList = document.getElementById('answersList');
+      answersList.innerHTML = '';
+      for(var i = 0; i < answers.length; i++){
+
+        var answer = document.createElement("div");
+        
+        answer.setAttribute('class', 'Answer');
+        answer.setAttribute("id", answers[i]['author_uni'])
+
+
+        var upvote = document.createElement("a");
+        var endorse = document.createElement("a");
+
+        upvote.setAttribute("class", "btn btn-primary btn-primary-spacing");
+        endorse.setAttribute("class", "btn btn-primary btn-primary-spacing");
+
+        upvote.textContent = "upvote";
+        endorse.textContent = "endorse";
+        
+        var callingPressButton = function(){
+          var author_uni = this.parentElement.getAttribute("id");
+          var url = "/"+ author_uni;
+
+          var purpose = $(this).text();
+
+          pressButton(purpose, url);
+
+        }
+
+        upvote.addEventListener("click", callingPressButton);
+        endorse.addEventListener("click", callingPressButton);
+        //add answers page
+
+        var link = document.createElement("p");
+        var text = answers[i]['answer'] + "[upvotes = " + answers[i]['upvotes'] + "]";
+
+        if(answers[i]['endorsed'] == 'True'){
+            text += "ENDORSED";
+        }
+
+        link.textContent = text;
+
+        answer.appendChild(link)
+
+        //add buttons functionalities
+        if(is_instructor == 'False'){
+          answer.appendChild(upvote);      
+        }
+        else{
+          answer.appendChild(endorse);
+        }
+
+        answersList.appendChild(answer);
+      }
+
+    }
+
+  </script>
+
+<body>
+
+  <h1 style="text-align: center">Welcome to Qic! ... (pronounced k-ĭ​-k)</h1>
+    <!--change this into a form-->
+    <div style="float:right">
+    <form action="{{ url_for('logout')}}" method=get>
+        <input align="right" type=submit value="Logout" class = "button"></input>
+    </form>
+    </div>
+    <hr  width="70%">
+    <div>
+      <h1> <u>Answers</u><h1>
+          <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}" method=get>
+            <input align="right" type=submit value="Bookmark" name="Bookmark" class = "button"></input>
+            <input align="right" type=submit value="Upvoted" name="Upvoted" class = "button"></input>
+          </form>
+
+          <br>
+      {% if session['is_instructor'] == False: %}
+        <button type="button" class="button" id="addAnswerButton">Add Answer</button> </div>
+      {% endif %}
+
+  <div class="answers" id="answersList">
+
+      <div class="answer">
+        
+      </div>
+
+  </div>
+
+  <hr  width="70%">
+
+    <div id="addAnswerForm" style="display: none;">
+      <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}/{{input['question_id']}}" method="POST">
+            <div class="flex" id="messageForm">
+                  <div class="form-group" id="messageInput">
+                    <input type="text" class="form-control" name="answer" placeholder="Type your answer here ... ">
+                  </div>
+                  <input type="submit" class= "button" value="Submit">
+                </div>
+        </form>
+    </div>
+  
+<style>
+    .button, .btn{
+        background-color:#8EC4FD;
+        border: 1px;
+        border-radius:4px;
+        font-size: 16px
+    }
+    .btn-primary-spacing{
+        margin-right: 10px;
+        margin-bottom: 10px !important;
+    }
+    select{
+        width:20%;
         
     }
-    
-        </script>
-    
-    <body>
-        
-        <h1 style="text-align: center">Welcome to Qic! ... (pronounced k-ĭ​-k)</h1>
-        <!--change this into a form-->
-        <div style="float:right">
-            <form action="{{ url_for('logout')}}" method=get>
-                <input align="right" type=submit value="Logout" class = "button"></input>
-            </form>
-        </div>
-        <hr  width="70%">
-        <div>
-            <h1> Questions <h1>
-                {% if session['is_instructor'] == False: %}
-            <button type="button" class="button" id="addQuestionButton">Add Question</button> </div>
-        {% endif %}
-        
-        <div class="questions" id="questionsList">
-            
-            <div class="question">
-                
-            </div>
-            
-        </div>
-        
-        <hr  width="70%">
-        
-        <div id="addQuestionForm" style="display: none;">
-            <form action="/classes/{{input['instructor_uni']}}/{{input['course_id']}}" method="POST">
-                <div class="flex" id="messageForm">
-                    <div class="form-group" id="messageInput">
-                        <input type="text" class="form-control" name="question" placeholder="Type your question here ... ">
-                            </div>
-                    <input type="submit" class= "button" value="Ask">
-                        </div>
-            </form>
-        </div>
-        
-        <style>
-            .button, button{
-                background-color:#8EC4FD;
-                border: 1px;
-                border-radius:4px;
-                font-size: 16px
-            }
-        body{
-            font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
-            font-size: 20px;
-        }
-        </style>
-        
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
-    </body>
-    
-    
+    body{
+        font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
+        font-size: 20px;
+    }
+</style>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+</body>
+
+
 </html>

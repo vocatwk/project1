@@ -287,23 +287,23 @@ def course(instructorUNI, courseID):
   ##return questions to a specific course ordered by upvotes and time
   ##if the request method is get if we get the bookmarks of the upvoted
   
-  bookmark = request.form['Bookmark']
-  if bookmark is not none:
+  bookmark = request.form.get('Bookmark')
+  if bookmark is not None:
       # the question has to be in bookmarks, has to have the same uni and has to be enrolled in the class
     q = 'select distinct q.question_id, q.student_UNI, q.question, q.answered, q.timestamp,upvotes from (select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc) as q, bookmarks where bookmarker_uni = %s and bookmarks.student_uni = q.student_uni and q.question_id = bookmarks.question_id and bookmarks.course_id=1 and bookmarks.instructor_uni = %s'
     questions = []
 
     temp = {}
-        for row in cursor:
-        temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
-        questions.append(temp)
+    for row in cursor:
+      temp = {'question': row['question'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'answered' : row['answered'], 'upvotes': row['upvotes']}
+      questions.append(temp)
     input = {'course_id': courseID, 'questions':questions, 'instructor_uni': instructorUNI}
   
   #filter by bookmarks
   #return the page we currently have with results as bookmarked questions
   
-  upvoted = request.form['Upvoted']
-  if upvoted is not none:
+  upvoted = request.form.get('Upvoted')
+  #if upvoted is not none:
   
   cmd = 'select q.question_id, q.student_UNI, q.question, q.answered, q.timestamp, (count(*) OVER (partition by q.question_id, q.student_UNI, q.instructor_uni, q.course_id) )as upvotes from questions q left join upvoted_questions uq on q.question_id = uq.question_id AND q.student_UNI = uq.student_UNI AND q.course_id = uq.course_id AND q.instructor_uni = uq.instructor_uni where q.course_id = %s AND q.instructor_UNI = %s order by extract(year from q.timestamp) desc, extract(month from q.timestamp) desc, extract(day from q.timestamp) desc, upvotes desc'
   cursor = g.conn.execute(cmd,(courseID, instructorUNI))
@@ -325,8 +325,10 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
 
   #make sure user is logged in and has access to the course
   if 'uni' not in session:
-        return redirect(url_for('index'))
-  uni =session['uni']
+    return redirect(url_for('index'))
+
+  uni = session['uni']
+
   if session['is_instructor'] == True:
     #make sure the courseId is the instructor's
     if session['uni'] != instructorUNI:
@@ -378,8 +380,10 @@ def doQuestion(instructorUNI, courseID, askerID, questionID):
     temp = {'answer': row['answer'], 'author_uni': row['author_uni'], 'student_UNI': row['student_uni'], 'question_ID' : row['question_id'], 'endorsed' : row['endorsed'], 'upvotes': row['upvotes']}
     answers.append(temp)
 
-    input = {'course_id': courseID,'answers':answers, 'instructor_uni': instructorUNI}
+  input = {'course_id': courseID,'answers':answers, 'instructor_uni': instructorUNI, 'question_id': questionID, 'student_uni': askerID}
+  if request.headers.get('purpose') == 'getAnswers':
     return json.dumps(input)
+  return render_template("questions.html", input=input)
 
 """#for the answers page, we just render them.
 @app.route('/questions/<courseID>/<instructorUNI>/<askerID>/<questionID>', methods=['GET', 'POST'])
